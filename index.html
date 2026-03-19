@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neoclassical Growth Model – Interactive Economic Simulation</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── TOKENS ── */
+:root {
+  --white:#ffffff; --off:#f7f8fa; --rule:#e2e5eb; --muted:#8a93a8;
+  --body:#3d4660; --navy:#1a2340; --ink:#0d1526; --blue:#1d4ed8;
+  --teal:#0d7a6b; --amber:#b45309; --red:#c0392b; --green:#15803d;
+  --shadow:0 1px 3px rgba(13,21,38,.07),0 4px 16px rgba(13,21,38,.05);
+  /* breakpoints for reference: 1024 / 768 / 480 */
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:15px; }
+body {
+  background:var(--off); color:var(--body);
+  font-family:'DM Sans',sans-serif; font-weight:400; line-height:1.6;
+  min-height:100vh; overflow-x:hidden; width:100%;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  background:var(--navy); border-bottom:2px solid var(--blue);
+  padding:0 clamp(12px,4vw,32px);
+  display:flex; align-items:center; justify-content:space-between;
+  height:52px; width:100%;
+}
+.topbar-brand {
+  font-family:'DM Mono',monospace; font-size:clamp(9px,1.6vw,11px);
+  letter-spacing:2px; color:rgba(255,255,255,.45); text-transform:uppercase;
+}
+.topbar-tag {
+  font-family:'DM Mono',monospace; font-size:clamp(8px,1.3vw,10px);
+  letter-spacing:1px; color:rgba(255,255,255,.3); text-transform:uppercase;
+  white-space:nowrap;
+}
+
+/* ── HEADER ── */
+.header {
+  background:var(--white); border-bottom:1px solid var(--rule);
+  padding:clamp(16px,3vw,28px) clamp(12px,4vw,32px); width:100%;
+}
+.header-inner {
+  max-width:1240px; margin:0 auto;
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:24px; flex-wrap:wrap;
+}
+.report-label {
+  display:inline-flex; align-items:center; gap:6px;
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1.5px;
+  text-transform:uppercase; color:var(--blue); margin-bottom:8px;
+}
+.report-label::before { content:''; width:16px; height:2px; background:var(--blue); display:block; }
+h1 {
+  font-family:'Libre Baskerville',serif;
+  font-size:clamp(15px,2.2vw,25px); font-weight:700;
+  color:var(--ink); line-height:1.25; margin-bottom:6px; letter-spacing:-.02em;
+}
+.header-sub {
+  font-size:clamp(11px,1.4vw,12.5px); color:var(--muted);
+  font-weight:300; max-width:560px; line-height:1.5;
+}
+.header-meta {
+  display:flex; flex-direction:column; align-items:flex-end;
+  gap:5px; flex-shrink:0;
+}
+.meta-item { font-family:'DM Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:.5px; }
+.meta-item span { color:var(--body); font-weight:500; }
+
+/* ── RULE STRIP ── */
+.rule-strip {
+  background:var(--white); border-bottom:1px solid var(--rule);
+  padding:0 clamp(12px,4vw,32px); width:100%; overflow:hidden;
+}
+.rule-strip-inner {
+  max-width:1240px; margin:0 auto;
+  display:flex; flex-wrap:wrap; gap:0;
+}
+.rule-pill {
+  display:flex; align-items:center; gap:8px;
+  padding:9px 16px 9px 0; margin-right:16px;
+  border-right:1px solid var(--rule);
+  font-size:clamp(10px,1.3vw,11px); color:var(--muted);
+  flex-shrink:0;
+}
+.rule-pill:last-child { border-right:none; }
+.rule-pill .sw { width:12px; height:3px; border-radius:1px; flex-shrink:0; }
+.rule-pill strong { color:var(--body); font-weight:500; }
+
+/* ── MAIN LAYOUT ── */
+.main {
+  max-width:1240px; margin:0 auto;
+  padding:24px clamp(12px,4vw,32px) 48px;
+  display:grid;
+  grid-template-columns:262px 1fr;
+  gap:20px;
+  align-items:start;
+  width:100%;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  display:flex; flex-direction:column; gap:12px;
+  position:sticky; top:20px;
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
+  scrollbar-width:thin; scrollbar-color:var(--rule) transparent;
+  min-width:0;
+}
+.sidebar::-webkit-scrollbar { width:3px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--rule); }
+
+/* ── CARD ── */
+.card { background:var(--white); border:1px solid var(--rule); box-shadow:var(--shadow); }
+.card-head {
+  padding:13px 16px 9px; border-bottom:1px solid var(--rule);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.card-head-title {
+  font-family:'DM Mono',monospace; font-size:9.5px;
+  letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); font-weight:500;
+}
+.card-body { padding:16px; }
+
+/* ── PARAM GROUP ── */
+.pg { margin-bottom:17px; }
+.pg:last-child { margin-bottom:0; }
+.pg-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:2px; }
+.pg-label { font-size:12px; font-weight:500; color:var(--ink); display:flex; align-items:center; gap:7px; }
+.pg-sym {
+  font-family:'DM Mono',monospace; font-size:12px; color:var(--white);
+  background:var(--navy); padding:1px 7px; border-radius:2px; font-weight:400;
+}
+.pg-sym.bs { background:var(--blue); }
+.pg-sym.ba { background:var(--amber); }
+.pg-val { font-family:'DM Mono',monospace; font-size:13px; font-weight:500; color:var(--ink); min-width:36px; text-align:right; }
+.pg-badge {
+  display:inline-block; font-family:'DM Mono',monospace; font-size:8.5px;
+  letter-spacing:.8px; text-transform:uppercase; padding:2px 6px; border-radius:2px; margin-bottom:4px;
+}
+.b-sh { background:#eff6ff; color:var(--blue); border:1px solid #bfdbfe; }
+.b-mv { background:#fffbeb; color:var(--amber); border:1px solid #fde68a; }
+.b-sp { background:#f0fdf4; color:var(--green); border:1px solid #bbf7d0; }
+.pg-desc { font-size:10.5px; color:var(--muted); margin-bottom:5px; line-height:1.4; }
+
+/* ── EXPAND ── */
+.xbtn {
+  font-size:9.5px; font-family:'DM Mono',monospace; color:var(--muted);
+  cursor:pointer; border:none; background:none; padding:0; margin-bottom:5px;
+  display:inline-flex; align-items:center; gap:4px; transition:color .15s;
+  /* touch-friendly tap area */
+  min-height:28px;
+}
+.xbtn:hover { color:var(--navy); }
+.xbtn::before { content:'▶'; font-size:7px; display:inline-block; transition:transform .2s; }
+.xbtn.open::before { transform:rotate(90deg); }
+.xbody {
+  display:none; background:var(--off); border:1px solid var(--rule);
+  border-left:2px solid var(--blue); padding:9px 11px; margin-bottom:7px;
+  font-size:10.5px; color:var(--body); line-height:1.6;
+}
+.xbody.open { display:block; }
+.xbody strong { color:var(--ink); }
+.xbody code { font-family:'DM Mono',monospace; font-size:10px; color:var(--blue); display:block; margin:3px 0; }
+.xbody .eg { display:block; margin-top:6px; padding:5px 8px; background:var(--white); border:1px solid var(--rule); font-size:9.5px; color:var(--muted); font-style:italic; }
+
+/* ── RANGE SLIDER ── */
+input[type=range] {
+  width:100%; -webkit-appearance:none; height:2px;
+  background:var(--rule); outline:none; cursor:pointer; border-radius:1px;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  /* larger thumb on touch devices */
+  width:14px; height:14px;
+  border-radius:50%; cursor:pointer;
+  border:2px solid var(--white);
+  box-shadow:0 0 0 1px var(--rule),0 1px 4px rgba(0,0,0,.15);
+  transition:transform .1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform:scale(1.25); }
+.sn::-webkit-slider-thumb { background:var(--navy); }
+.sb::-webkit-slider-thumb { background:var(--blue); }
+.sa::-webkit-slider-thumb { background:var(--amber); }
+.rule-line { border:none; border-top:1px solid var(--rule); margin:13px 0; }
+
+/* ── RESET BTN ── */
+.reset-btn {
+  width:100%; padding:10px 12px; background:var(--white);
+  border:1px solid var(--rule); color:var(--muted);
+  font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:1px; text-transform:uppercase; cursor:pointer;
+  transition:all .2s; text-align:center;
+  /* touch-friendly */
+  min-height:40px;
+}
+.reset-btn:hover { border-color:var(--red); color:var(--red); background:#fef2f2; }
+
+/* ── AUTO-ALERT ── */
+.auto-alert {
+  display:none; margin-top:10px; background:#f0fdf4;
+  border:1px solid #bbf7d0; border-left:3px solid var(--green);
+  padding:9px 11px; font-size:10.5px; color:#166534; line-height:1.55;
+}
+.auto-alert.show { display:block; }
+
+/* ── CHART COLUMN ── */
+.chart-col { display:flex; flex-direction:column; gap:14px; min-width:0; }
+
+/* ── LEGEND ── */
+.legend-row {
+  display:flex; gap:12px; flex-wrap:wrap; align-items:center;
+  padding:10px 16px; background:var(--off); border-bottom:1px solid var(--rule);
+}
+.leg { display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--muted); font-family:'DM Mono',monospace; }
+.leg-ln { width:20px; height:2px; border-radius:1px; }
+.leg-dot { width:9px; height:9px; border-radius:50%; }
+
+/* ── CANVAS ── */
+canvas { width:100% !important; display:block; min-height:280px; }
+
+/* ── VALS ROW ── */
+.vals-row { display:flex; flex-wrap:wrap; border-top:1px solid var(--rule); }
+.vchip {
+  font-family:'DM Mono',monospace; font-size:10.5px;
+  padding:8px 12px; color:var(--muted);
+  border-right:1px solid var(--rule);
+  flex:1; min-width:90px; text-align:center; line-height:1.3;
+}
+.vchip:last-child { border-right:none; }
+.vchip .val { display:block; font-size:13px; font-weight:500; color:var(--ink); margin-top:2px; }
+.vchip .lbl { font-size:9px; text-transform:uppercase; letter-spacing:.8px; }
+.vchip.delta .val { color:var(--blue); }
+.vchip.delta.neg .val { color:var(--red); }
+
+/* ── INSIGHT CARD ── */
+.insight-card {
+  background:var(--white); border:1px solid var(--rule);
+  box-shadow:var(--shadow); display:flex; overflow:hidden;
+}
+.insight-stripe { width:3px; background:var(--navy); flex-shrink:0; }
+.insight-body { padding:14px 16px; flex:1; min-width:0; }
+.insight-label {
+  font-family:'DM Mono',monospace; font-size:9.5px;
+  letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); margin-bottom:6px;
+}
+#insight { font-size:12px; line-height:1.8; color:var(--body); }
+#insight strong { color:var(--ink); font-weight:500; }
+#insight .ts { color:var(--blue); font-weight:500; }
+#insight .tm { color:var(--amber); font-weight:500; }
+#insight .eq { font-family:'DM Mono',monospace; font-size:10px; color:var(--blue); background:#eff6ff; padding:1px 5px; border-radius:2px; }
+
+/* ── GLOSSARY ── */
+.glossary { max-width:1240px; margin:0 auto; padding:0 clamp(12px,4vw,32px) 48px; }
+.glos-head {
+  display:flex; align-items:baseline; gap:16px; flex-wrap:wrap;
+  padding:20px 0 16px; border-bottom:2px solid var(--ink); margin-bottom:16px;
+}
+.glos-title { font-family:'Libre Baskerville',serif; font-size:16px; color:var(--ink); font-weight:700; }
+.glos-sub { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
+.glos-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(min(275px,100%),1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+}
+.gc { background:var(--white); padding:14px 16px; transition:background .15s; }
+.gc:hover { background:var(--off); }
+.gc-top { display:flex; align-items:center; gap:8px; margin-bottom:7px; flex-wrap:wrap; }
+.gc-sym {
+  font-family:'DM Mono',monospace; font-size:12px; color:var(--navy);
+  background:var(--off); border:1px solid var(--rule);
+  padding:1px 8px; min-width:34px; text-align:center; flex-shrink:0;
+}
+.gc-name { font-size:12px; font-weight:500; color:var(--ink); }
+.gc-cat {
+  font-family:'DM Mono',monospace; font-size:8px; letter-spacing:1px;
+  text-transform:uppercase; padding:2px 5px; border-radius:2px;
+  margin-left:auto; flex-shrink:0;
+}
+.ct { background:#eff6ff; color:var(--blue); }
+.ck { background:#fffbeb; color:var(--amber); }
+.cl { background:#f0fdf4; color:var(--green); }
+.co { background:#f8fafc; color:var(--body); border:1px solid var(--rule); }
+.gc-def { font-size:11px; color:var(--body); line-height:1.6; margin-bottom:6px; }
+.gc-formula {
+  font-family:'DM Mono',monospace; font-size:10px; color:var(--blue);
+  background:#eff6ff; padding:4px 8px; margin-bottom:6px; display:block;
+  border-left:2px solid var(--blue); word-break:break-all;
+}
+.gc-eg { font-size:10.5px; color:var(--muted); font-style:italic; border-top:1px solid var(--rule); padding-top:6px; line-height:1.45; }
+
+/* ── FOOTER ── */
+.footer {
+  background:var(--navy); color:rgba(255,255,255,.3);
+  font-family:'DM Mono',monospace; font-size:10px; letter-spacing:.5px;
+  padding:14px clamp(12px,4vw,32px); text-align:center;
+}
+
+/* ── QA REF ── */
+.qa-ref { padding:9px 10px; background:var(--off); border:1px solid var(--rule); border-left:2px solid var(--blue); margin-bottom:7px; }
+.qa-ref:last-child { margin-bottom:0; }
+.qa-ref.amber { border-left-color:var(--amber); }
+.qa-ref.teal  { border-left-color:var(--teal); }
+.qa-lbl { font-family:'DM Mono',monospace; font-size:8.5px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; margin-bottom:3px; }
+.qa-body { font-size:10.5px; color:var(--body); line-height:1.5; }
+.qa-body strong { color:var(--ink); }
+
+/* ══════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   Desktop  > 1024px  — two-column (default above)
+   Tablet   768–1024px
+   Mobile   480–768px
+   Small    < 480px
+══════════════════════════════════════════ */
+
+/* ── TABLET  768–1024px ── */
+@media (max-width:1024px) {
+  .main {
+    grid-template-columns: 230px 1fr;
+    padding: 20px clamp(12px,3vw,24px) 40px;
+    gap: 16px;
+  }
+  .sidebar { max-height: none; position: static; overflow-y: visible; }
+  canvas { min-height: 300px; }
+  .vchip { min-width: 80px; font-size: 10px; }
+  .header-meta { display: none; } /* hide meta on tablet to save space */
+}
+
+/* ── MOBILE  max 768px ── */
+@media (max-width:768px) {
+  html { font-size: 14px; }
+
+  .topbar { height: 44px; }
+  .topbar-tag { display: none; } /* save space */
+
+  .header { padding: 14px 14px 12px; }
+  .header-inner { flex-direction: column; gap: 10px; }
+  .header-meta { display: none; }
+  h1 { font-size: clamp(15px, 4vw, 20px); }
+  .header-sub { font-size: 11.5px; max-width: 100%; }
+
+  .rule-strip { padding: 0 14px; }
+  .rule-pill {
+    padding: 7px 12px 7px 0;
+    margin-right: 12px;
+    font-size: 10px;
+  }
+
+  /* SINGLE COLUMN */
+  .main {
+    grid-template-columns: 1fr;
+    padding: 12px 14px 32px;
+    gap: 14px;
+  }
+
+  /* Sidebar: no longer sticky — flows in document */
+  .sidebar {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  /* Sliders: larger thumb for touch */
+  input[type=range]::-webkit-slider-thumb { width: 20px; height: 20px; }
+  input[type=range] { height: 4px; }
+  .xbtn { min-height: 32px; font-size: 10px; }
+  .reset-btn { min-height: 44px; font-size: 11px; }
+
+  canvas { min-height: 260px; }
+
+  /* legend wraps tightly */
+  .legend-row { gap: 8px; padding: 8px 12px; }
+  .leg { font-size: 9.5px; }
+
+  /* vals row: 2 columns on mobile */
+  .vchip { min-width: calc(50% - 1px); flex: none; }
+  .vchip:nth-child(2n) { border-right: none; }
+  .vchip:nth-child(n+3) { border-top: 1px solid var(--rule); }
+
+  /* glossary */
+  .glossary { padding: 0 14px 32px; }
+  .glos-grid { grid-template-columns: 1fr; }
+
+  .footer { padding: 12px 14px; font-size: 9px; }
+}
+
+/* ── SMALL MOBILE  max 480px ── */
+@media (max-width:480px) {
+  html { font-size: 13px; }
+
+  .topbar { height: 40px; }
+  .topbar-brand { font-size: 9px; letter-spacing: 1px; }
+
+  .rule-strip-inner { flex-direction: column; }
+  .rule-pill {
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+    margin-right: 0;
+    padding: 7px 0;
+    width: 100%;
+  }
+  .rule-pill:last-child { border-bottom: none; }
+
+  h1 { font-size: 15px; }
+
+  .pg-label { font-size: 11px; }
+  .pg-val   { font-size: 12px; }
+
+  /* single column vals */
+  .vchip { min-width: 100%; border-right: none !important; border-top: 1px solid var(--rule); }
+  .vchip:first-child { border-top: none; }
+
+  canvas { min-height: 220px; }
+
+  .insight-body { padding: 10px 12px; }
+  #insight { font-size: 11.5px; }
+
+  .gc { padding: 12px; }
+  .gc-def { font-size: 10.5px; }
+  .gc-eg  { font-size: 10px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">Economic Research &amp; Simulation Platform</div>
+  <div class="topbar-tag">Umut SARIKAYA</div>
+</div>
+
+<div class="header">
+  <div class="header-inner">
+    <div>
+      <div class="report-label">Interactive Simulation</div>
+      <h1>Neoclassical Growth Model &ndash; Interactive Economic Simulation</h1>
+      <p class="header-sub">A parameter-driven visualisation of the Cobb-Douglas production function <em>y&nbsp;=&nbsp;Ak<sup>&alpha;</sup></em>. The baseline curve is fixed as a permanent reference; all slider adjustments are reflected in the current curve in real time.</p>
+    </div>
+    <div class="header-meta">
+      <div class="meta-item">Model: <span>Solow-Swan (1956)</span></div>
+      <div class="meta-item">Function: <span>y = Ak<sup>&alpha;</sup></span></div>
+      <div class="meta-item">Framework: <span>Cobb-Douglas, CRS</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="rule-strip">
+  <div class="rule-strip-inner">
+    <div class="rule-pill"><div class="sw" style="background:#2d6a4f"></div><span><strong>Green curve</strong> &mdash; baseline, permanently fixed</span></div>
+    <div class="rule-pill"><div class="sw" style="background:#1d4ed8"></div><span><strong>A changes</strong> &rarr; current curve shifts vertically</span></div>
+    <div class="rule-pill"><div class="sw" style="background:#c0392b"></div><span><strong>K or L changes</strong> &rarr; dot moves along current curve</span></div>
+    <div class="rule-pill"><div class="sw" style="background:#15803d"></div><span><strong>&alpha; &rarr; 1</strong> &rarr; curve approaches 45&deg; line</span></div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-head-title">Model Parameters</div>
+      </div>
+      <div class="card-body">
+
+        <div class="pg">
+          <div class="pg-header">
+            <span class="pg-label"><span class="pg-sym">A</span> Technology (TFP)</span>
+            <span class="pg-val" id="v-A">1.00</span>
+          </div>
+          <span class="pg-badge b-sh">Shifts curve</span>
+          <div class="pg-desc">A&uarr; raises output at every capital level simultaneously &mdash; a vertical curve shift.</div>
+          <button class="xbtn" onclick="toggle('d-A',this)">Definition &amp; context</button>
+          <div class="xbody" id="d-A"><strong>Total Factor Productivity (TFP)</strong> &mdash; captures technology, institutional quality, and human capital. Because A is a multiplicative shifter, it lifts the entire production function.<code>A&uarr; &rarr; y = Ak<sup>&alpha;</sup> shifts up &rarr; curve shift</code><span class="eg">&#127757; China's 1978 Open Door reforms: technology inflows constituted a large positive A shock, shifting the production frontier upward.</span></div>
+          <input type="range" class="sn" id="sl-A" min="0.5" max="2.5" step="0.05" value="1.5">
+        </div>
+
+        <div class="pg">
+          <div class="pg-header">
+            <span class="pg-label"><span class="pg-sym bs">&alpha;</span> Capital Share</span>
+            <span class="pg-val" id="v-alpha">0.33</span>
+          </div>
+          <span class="pg-badge b-sp">Reshapes curve</span>
+          <div class="pg-desc">Controls curvature. &alpha;&nbsp;=&nbsp;1 &rarr; straight 45&deg; line (full automation).</div>
+          <button class="xbtn" onclick="toggle('d-alpha',this)">Definition &amp; context</button>
+          <div class="xbody" id="d-alpha"><strong>Capital's Output Elasticity (&alpha;)</strong> &mdash; also capital's share of national income. At &alpha;&nbsp;=&nbsp;0.33, capital earns one-third of every unit of output.<code>&alpha; &rarr; 1 &rarr; Y = AK (AK model, no diminishing returns)</code><span class="eg">&#129302; Rising automation pushes &alpha; upward, compressing the labour share (1&minus;&alpha;) and flattening the curve toward linearity.</span></div>
+          <input type="range" class="sb" id="sl-alpha" min="0.10" max="0.80" step="0.01" value="0.33">
+        </div>
+
+        <hr class="rule-line">
+
+        <div class="pg">
+          <div class="pg-header">
+            <span class="pg-label"><span class="pg-sym ba">K</span> Capital</span>
+            <span class="pg-val" id="v-K">4.0</span>
+          </div>
+          <span class="pg-badge b-mv">Moves dot along curve</span>
+          <div class="pg-desc">K&uarr; raises K/L &mdash; the dot slides right along the current curve. The curve does not shift.</div>
+          <button class="xbtn" onclick="toggle('d-K',this)">Definition &amp; context</button>
+          <div class="xbody" id="d-K"><strong>Physical Capital (K)</strong> &mdash; machinery, infrastructure, equipment. An increase in K with L held constant deepens capital per worker, moving the dot rightward subject to diminishing returns.<code>K&uarr; (L fixed) &rarr; k = K/L&uarr; &rarr; dot moves right</code><span class="eg">&#9881;&#65039; Installing additional machinery is capital deepening &mdash; movement along the curve, not a shift.</span></div>
+          <input type="range" class="sa" id="sl-K" min="1.0" max="10" step="0.1" value="5.0">
+        </div>
+
+        <div class="pg">
+          <div class="pg-header">
+            <span class="pg-label"><span class="pg-sym ba">L</span> Labour</span>
+            <span class="pg-val" id="v-L">2.0</span>
+          </div>
+          <span class="pg-badge b-mv">Moves dot along curve</span>
+          <div class="pg-desc">L&uarr; reduces K/L (capital dilution) &mdash; the dot slides left along the current curve.</div>
+          <button class="xbtn" onclick="toggle('d-L',this)">Definition &amp; context</button>
+          <div class="xbody" id="d-L"><strong>Labour Force (L)</strong> &mdash; a growing workforce spreads capital more thinly. A shrinking workforce raises k and moves the dot rightward.<code>L&uarr; (K fixed) &rarr; k&darr; &rarr; dot moves left</code><code>L&darr; (ageing)   &rarr; k&uarr; &rarr; dot moves right</code><span class="eg">&#128116; China's working-age population peaked circa 2015. L&darr; &rarr; K/L&uarr; &rarr; LP rises, but aggregate GDP decelerates.</span></div>
+          <input type="range" class="sa" id="sl-L" min="0.5" max="6" step="0.1" value="2.0">
+        </div>
+
+        <button class="reset-btn" onclick="resetAll()">&#8635;&nbsp; Reset to Baseline</button>
+        <div class="auto-alert" id="auto-alert"><strong>Full Automation Zone &mdash; &alpha; = <span id="alpha-disp">0.33</span></strong><br>The production curve is approaching a 45&deg; line. Diminishing returns to capital are fading; labour's income share (1&minus;&alpha;) approaches zero. This corresponds to the AK growth model.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div class="card-head-title">Workshop Reference</div></div>
+      <div class="card-body" style="padding:12px">
+        <div class="qa-ref"><div class="qa-lbl">Education &uarr; (H&uarr;)</div><div class="qa-body">H folds into A &rarr; <strong>A&uarr;</strong> &rarr; curve shifts up &rarr; LP&uarr;, TFP&uarr;</div></div>
+        <div class="qa-ref amber"><div class="qa-lbl">More machines (K&uarr;)</div><div class="qa-body">A unchanged &rarr; <strong>K/L&uarr;</strong> &rarr; dot right &rarr; LP&uarr;, TFP unchanged</div></div>
+        <div class="qa-ref teal"><div class="qa-lbl">Sustainable growth?</div><div class="qa-body">Only <strong>A (TFP)</strong> sustains LP growth indefinitely. K and L face diminishing returns.</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="chart-col">
+    <div class="card" style="overflow:hidden">
+      <div class="card-head">
+        <div class="card-head-title">Production Function &mdash; y = Ak<sup>&alpha;</sup></div>
+        <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace" id="live-params">A=1.50 &middot; &alpha;=0.33 &middot; K=5.0 &middot; L=2.0</div>
+      </div>
+      <div class="legend-row">
+        <div class="leg"><div class="leg-ln" style="background:#2d6a4f;opacity:0.6"></div>Baseline (fixed)</div>
+        <div class="leg"><div class="leg-ln" style="background:#1d4ed8"></div>Current (live)</div>
+        <div class="leg"><div class="leg-ln" style="background:#94a3b8;height:0;border-top:1.5px dashed #94a3b8"></div>45&deg; ref (&alpha;=1)</div>
+        <div class="leg"><div class="leg-dot" style="background:#2d6a4f;opacity:0.6"></div>&nbsp;Baseline point</div>
+        <div class="leg"><div class="leg-dot" style="background:#c0392b"></div>&nbsp;Current point</div>
+      </div>
+      <canvas id="main-canvas" height="400"></canvas>
+      <div class="vals-row">
+        <div class="vchip"><div class="lbl">Baseline K/L</div><div class="val" id="b-k">2.000</div></div>
+        <div class="vchip"><div class="lbl">Baseline Y/L</div><div class="val" id="b-y">1.260</div></div>
+        <div class="vchip"><div class="lbl">Current K/L</div><div class="val" id="l-k">2.000</div></div>
+        <div class="vchip"><div class="lbl">Current Y/L</div><div class="val" id="l-y">1.260</div></div>
+        <div class="vchip delta" id="delta-chip"><div class="lbl">&Delta; Y/L vs Baseline</div><div class="val" id="l-dy">0.000</div></div>
+      </div>
+    </div>
+
+    <div class="insight-card">
+      <div class="insight-stripe"></div>
+      <div class="insight-body">
+        <div class="insight-label">Analytical Commentary</div>
+        <div id="insight">Adjust any parameter to generate commentary. The <strong>baseline curve</strong> (green) is permanently fixed at A&nbsp;=&nbsp;1.50, &alpha;&nbsp;=&nbsp;0.33, K&nbsp;=&nbsp;5.0, L&nbsp;=&nbsp;2.0.<br><br>Modifying <strong>A</strong> will produce a <span class="ts">vertical shift</span> of the current curve. Modifying <strong>K</strong> or <strong>L</strong> will produce <span class="tm">movement along</span> the current curve. Modifying <strong>&alpha;</strong> will reshape the curvature of the current curve.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="glossary">
+  <div class="glos-head">
+    <div class="glos-title">Glossary of Terms</div>
+    <div class="glos-sub">All variables and concepts used in this simulation</div>
+  </div>
+  <div class="glos-grid">
+    <div class="gc"><div class="gc-top"><div class="gc-sym">Y</div><div class="gc-name">Output / GDP</div><div class="gc-cat co">Output</div></div><div class="gc-def">Total value of goods and services produced. Determined by A, K, and L. Expressed per worker on the y-axis.</div><code class="gc-formula">Y = AK<sup>&alpha;</sup>L<sup>1&minus;&alpha;</sup> &rarr; y = Y/L = Ak<sup>&alpha;</sup></code><div class="gc-eg">&#128200; y is the y-axis. Higher y = higher labour productivity = higher long-run living standards.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">A</div><div class="gc-name">TFP / Technology</div><div class="gc-cat ct">Technology</div></div><div class="gc-def">Captures everything that raises output beyond raw K and L: technology, institutions, human capital, governance. A&uarr; shifts the entire curve upward. The only driver of sustained per-worker growth.</div><code class="gc-formula">A = Y / (K<sup>&alpha;</sup>L<sup>1&minus;&alpha;</sup>) &mdash; Solow Residual</code><div class="gc-eg">&#128300; Solow (1957): approximately seven-eighths of US growth 1909&ndash;1949 was attributable to A, not K or L accumulation.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">K</div><div class="gc-name">Physical Capital</div><div class="gc-cat ck">Capital</div></div><div class="gc-def">Productive stock of machinery, infrastructure, and equipment. K&uarr; with L held constant raises k = K/L &mdash; capital deepening &mdash; moving the dot rightward subject to diminishing returns.</div><code class="gc-formula">k = K/L (x-axis) | &part;&sup2;y/&part;k&sup2; &lt; 0</code><div class="gc-eg">&#127981; &ldquo;More machines&rdquo; (K&uarr;) = dot moves right. &ldquo;Better machines&rdquo; (A&uarr;) = current curve shifts up.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">L</div><div class="gc-name">Labour Force</div><div class="gc-cat cl">Labour</div></div><div class="gc-def">Number of workers. L&uarr; dilutes the capital stock, reducing k and moving the dot left. L&darr; raises k and moves the dot right, lifting labour productivity even as total GDP growth moderates.</div><code class="gc-formula">L&uarr; &rarr; k&darr; &rarr; dot left | L&darr; &rarr; k&uarr; &rarr; dot right</code><div class="gc-eg">&#128116; China: L&darr; &rarr; K/L&uarr; &rarr; LP rises, but %&Delta;Y = %&Delta;LP + %&Delta;L declines.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">&alpha;</div><div class="gc-name">Capital Share of Income</div><div class="gc-cat ck">Production</div></div><div class="gc-def">Capital's output elasticity and income share. Controls curvature. At &alpha; = 0.33, capital earns one-third of output. As &alpha; &rarr; 1, the curve straightens to a 45&deg; line &mdash; the AK model.</div><code class="gc-formula">&alpha; &asymp; 0.33 (empirical) | &alpha; = 1 &rarr; Y = AK</code><div class="gc-eg">&#129302; Automation pushes &alpha; upward: robots substitute for labour, raising the capital share.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">H</div><div class="gc-name">Human Capital</div><div class="gc-cat ct">Technology</div></div><div class="gc-def">Worker skills, education, and health. In the extended model, H folds into A = A'H<sup>(1&minus;&alpha;)</sup>. Improved education therefore constitutes an A shock &mdash; a curve shift, not movement along.</div><code class="gc-formula">Y = A'K<sup>&alpha;</sup>(HL)<sup>1&minus;&alpha;</sup> &rarr; A = A'H<sup>1&minus;&alpha;</sup></code><div class="gc-eg">&#127979; Education and training raise H &rarr; treated as A&uarr; in this diagram &rarr; current curve shifts up.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">DMR</div><div class="gc-name">Diminishing Marginal Returns</div><div class="gc-cat ck">Concept</div></div><div class="gc-def">Each additional unit of K/L adds progressively less Y/L &mdash; the fundamental source of the curve's concavity. Applies to K and L individually, not to A. This is why capital accumulation alone cannot sustain long-run per-worker growth.</div><code class="gc-formula">&part;y/&part;k &gt; 0 and &part;&sup2;y/&part;k&sup2; &lt; 0</code><div class="gc-eg">&#127959; First machine: large gain. One hundredth machine in a crowded facility: marginal gain.</div></div>
+    <div class="gc"><div class="gc-top"><div class="gc-sym">%&Delta;Y</div><div class="gc-name">GDP Growth Decomposition</div><div class="gc-cat co">Growth</div></div><div class="gc-def">GDP growth equals Labour Productivity growth plus Labour force growth. LP grows via A&uarr; (curve shift) or k&uarr; (movement along). Only sustained A growth maintains LP growth as DMR sets in on capital deepening.</div><code class="gc-formula">%&Delta;Y = %&Delta;LP + %&Delta;L | LP = Y/L = Ak<sup>&alpha;</sup></code><div class="gc-eg">&#128201; China's slowdown reflects simultaneous deceleration in LP growth and L growth.</div></div>
+  </div>
+</div>
+
+<div class="footer">Neoclassical Growth Model &middot; Solow-Swan (1956) &middot; Interactive Simulation</div>
+
+<script>
+const BASE={A:1.5,alpha:0.33,K:5.0,L:2.0};
+const p={...BASE};
+let prevP={...p};
+const fAt=(A,alpha,k)=>A*Math.pow(Math.max(k,0.0001),alpha);
+const liveK=()=>p.K/p.L;
+const liveY=()=>fAt(p.A,p.alpha,liveK());
+const baseK=()=>BASE.K/BASE.L;
+const baseY=()=>fAt(BASE.A,BASE.alpha,baseK());
+const KMAX=8;
+const YMAX=Math.max(fAt(BASE.A,BASE.alpha,KMAX),fAt(2.5,0.80,KMAX))*1.20;
+
+function toggle(id,btn){document.getElementById(id).classList.toggle('open');if(btn)btn.classList.toggle('open')}
+
+function draw(){
+  const canvas=document.getElementById('main-canvas');
+  if(!canvas||canvas.offsetWidth===0)return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.offsetWidth;
+  const H=window.innerWidth<=480?220:window.innerWidth<=768?280:400;
+  canvas.width=W;canvas.height=H;
+  const pad={top:28,right:28,bottom:52,left:64};
+  const pw=W-pad.left-pad.right,ph=H-pad.top-pad.bottom;
+  ctx.clearRect(0,0,W,H);
+  const tx=v=>pad.left+(v/KMAX)*pw;
+  const ty=v=>pad.top+ph-(v/YMAX)*ph;
+
+  ctx.fillStyle='#fafbfc';ctx.fillRect(pad.left,pad.top,pw,ph);
+
+  ctx.strokeStyle='#e8eaed';ctx.lineWidth=1;
+  for(let i=1;i<=5;i++){
+    ctx.beginPath();ctx.moveTo(pad.left+(i/5)*pw,pad.top);ctx.lineTo(pad.left+(i/5)*pw,pad.top+ph);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(pad.left,pad.top+(i/5)*ph);ctx.lineTo(pad.left+pw,pad.top+(i/5)*ph);ctx.stroke();
+  }
+
+  ctx.beginPath();ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1.2;ctx.setLineDash([6,5]);
+  ctx.moveTo(tx(0),ty(0));ctx.lineTo(tx(KMAX),ty(p.A*KMAX));ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#94a3b8';ctx.font='9.5px DM Mono,monospace';ctx.textAlign='left';
+  ctx.fillText('y = Ak  (\u03b1=1)',pad.left+pw-105,pad.top+16);
+
+  const N=400;
+  ctx.beginPath();ctx.strokeStyle='#2d6a4f';ctx.lineWidth=2;ctx.globalAlpha=0.5;
+  for(let i=0;i<=N;i++){const k=(i/N)*KMAX;i===0?ctx.moveTo(tx(k),ty(fAt(BASE.A,BASE.alpha,k))):ctx.lineTo(tx(k),ty(fAt(BASE.A,BASE.alpha,k)));}
+  ctx.stroke();ctx.globalAlpha=1;
+
+  ctx.fillStyle='rgba(45,106,79,0.55)';ctx.font='9.5px DM Mono,monospace';ctx.textAlign='left';
+  const bLK=KMAX*0.52;ctx.fillText('Baseline',tx(bLK)+4,ty(fAt(BASE.A,BASE.alpha,bLK))-8);
+
+  ctx.beginPath();ctx.strokeStyle='#1d4ed8';ctx.lineWidth=2.5;
+  for(let i=0;i<=N;i++){const k=(i/N)*KMAX;i===0?ctx.moveTo(tx(k),ty(fAt(p.A,p.alpha,k))):ctx.lineTo(tx(k),ty(fAt(p.A,p.alpha,k)));}
+  ctx.stroke();
+
+  ctx.fillStyle='#1d4ed8';ctx.font='9.5px DM Mono,monospace';
+  const lLK=KMAX*0.7;ctx.fillText('Current',tx(lLK)+4,ty(fAt(p.A,p.alpha,lLK))-8);
+
+  const bcx=tx(baseK()),bcy=ty(baseY());
+  ctx.beginPath();ctx.arc(bcx,bcy,6,0,Math.PI*2);
+  ctx.fillStyle='#2d6a4f';ctx.globalAlpha=0.55;ctx.fill();ctx.globalAlpha=1;
+  ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+
+  const lcx=tx(liveK()),lcy=ty(liveY());
+  ctx.beginPath();ctx.strokeStyle='rgba(192,57,43,0.18)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.moveTo(lcx,lcy);ctx.lineTo(lcx,pad.top+ph);
+  ctx.moveTo(lcx,lcy);ctx.lineTo(pad.left,lcy);
+  ctx.stroke();ctx.setLineDash([]);
+
+  ctx.beginPath();ctx.arc(lcx,lcy,7,0,Math.PI*2);
+  ctx.fillStyle='#c0392b';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+
+  ctx.font='bold 9px DM Mono,monospace';ctx.textAlign='center';
+  ctx.fillStyle='rgba(45,106,79,0.65)';ctx.fillText(baseK().toFixed(2),bcx,pad.top+ph+14);
+  ctx.fillStyle='#c0392b';ctx.fillText(liveK().toFixed(2),lcx,pad.top+ph+26);
+  ctx.textAlign='right';
+  ctx.fillStyle='rgba(45,106,79,0.65)';ctx.fillText(baseY().toFixed(2),pad.left-8,bcy+4);
+  ctx.fillStyle='#c0392b';ctx.fillText(liveY().toFixed(2),pad.left-8,lcy+4);
+  ctx.textAlign='left';
+
+  ctx.strokeStyle='#c8cdd8';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(pad.left,pad.top);ctx.lineTo(pad.left,pad.top+ph);ctx.lineTo(pad.left+pw,pad.top+ph);ctx.stroke();
+
+  ctx.fillStyle='#64748b';ctx.font='11px DM Sans,sans-serif';ctx.textAlign='center';
+  ctx.fillText('K / L  \u2014  Capital per Worker',pad.left+pw/2,H-10);
+  ctx.save();ctx.translate(16,pad.top+ph/2);ctx.rotate(-Math.PI/2);ctx.fillText('Y / L  \u2014  Output per Worker',0,0);ctx.restore();
+
+  ctx.fillStyle='#94a3b8';ctx.font='9px DM Mono,monospace';ctx.textAlign='center';
+  for(let i=1;i<=5;i++)ctx.fillText(((i/5)*KMAX).toFixed(1),pad.left+(i/5)*pw,pad.top+ph+13);
+  ctx.textAlign='right';
+  for(let i=1;i<=4;i++)ctx.fillText(((i/4)*YMAX).toFixed(1),pad.left-7,ty((i/4)*YMAX)+3);
+  ctx.textAlign='left';
+}
+
+function updateReadout(){
+  const bk=baseK(),by=baseY(),lk=liveK(),ly=liveY(),dy=ly-by;
+  document.getElementById('b-k').textContent=bk.toFixed(3);
+  document.getElementById('b-y').textContent=by.toFixed(3);
+  document.getElementById('l-k').textContent=lk.toFixed(3);
+  document.getElementById('l-y').textContent=ly.toFixed(3);
+  const sign=dy>=0?'+':'';
+  document.getElementById('l-dy').textContent=sign+dy.toFixed(3);
+  const chip=document.getElementById('delta-chip');
+  chip.classList.toggle('neg',dy<-0.001);
+  document.getElementById('live-params').textContent=`A=${p.A.toFixed(2)} \u00b7 \u03b1=${p.alpha.toFixed(2)} \u00b7 K=${p.K.toFixed(1)} \u00b7 L=${p.L.toFixed(1)}`;
+}
+
+const insightMap={
+  A_up:  ()=>`<strong>Technology (A) increased to ${p.A.toFixed(2)}.</strong> The current curve has undergone a <span class="ts">vertical upward shift</span>. Because A is a multiplicative parameter, output rises at every level of K/L simultaneously. At the same K/L&nbsp;=&nbsp;${liveK().toFixed(2)}, labour productivity is now ${liveY().toFixed(3)}, up from the baseline value of ${baseY().toFixed(3)}. This is a <em>curve shift</em>, not movement along the curve.`,
+  A_down:()=>`<strong>Technology (A) decreased to ${p.A.toFixed(2)}.</strong> The current curve has <span class="ts">shifted downward</span>. The economy produces less output per worker at every capital intensity. This may represent a negative productivity shock, institutional deterioration, or a reduction in human capital.`,
+  K_up:  ()=>`<strong>Capital (K) increased to ${p.K.toFixed(1)}.</strong> With L held constant, K/L has risen to ${liveK().toFixed(3)}. The red dot has <span class="tm">moved rightward along the current curve</span>. This is capital deepening. The curve itself has not shifted; technology (A) is unchanged. Labour productivity rises, but at a diminishing rate consistent with the concavity of the production function.`,
+  K_down:()=>`<strong>Capital (K) decreased to ${p.K.toFixed(1)}.</strong> K/L has fallen to ${liveK().toFixed(3)}; the red dot has <span class="tm">moved leftward along the current curve</span>. Reduced capital intensity lowers labour productivity. Neither curve has shifted.`,
+  L_up:  ()=>`<strong>Labour (L) increased to ${p.L.toFixed(1)}.</strong> With K held constant, the capital-labour ratio has fallen to ${liveK().toFixed(3)} &mdash; capital dilution. The dot has <span class="tm">moved leftward along the current curve</span>. Labour productivity declines even though the aggregate capital stock is unchanged.`,
+  L_down:()=>`<strong>Labour (L) decreased to ${p.L.toFixed(1)}.</strong> K/L has risen to ${liveK().toFixed(3)}; the dot has <span class="tm">moved rightward along the current curve</span>. Each worker now commands more capital, raising labour productivity. This is the mechanism underlying productivity gains in demographically ageing economies.`,
+  alpha: ()=>`<strong>Capital share (&alpha;) changed to ${p.alpha.toFixed(2)}.</strong> The <em>curvature</em> of the current curve has been modified. ${p.alpha>0.75?`At &alpha;&nbsp;=&nbsp;${p.alpha.toFixed(2)}, the production function is approaching a straight 45&deg; line &mdash; the AK model. Diminishing returns are nearly absent. Labour's income share (1&minus;&alpha;)&nbsp;=&nbsp;${((1-p.alpha)*100).toFixed(0)}%, approaching zero.`:`Capital's income share is ${(p.alpha*100).toFixed(0)}%; labour's share is ${((1-p.alpha)*100).toFixed(0)}%. Diminishing returns to capital remain operative.`} The baseline curve is unaffected.`,
+};
+
+function updateInsight(param){
+  let key=param;
+  if(param==='A')key=p.A>=prevP.A?'A_up':'A_down';
+  else if(param==='K')key=p.K>=prevP.K?'K_up':'K_down';
+  else if(param==='L')key=p.L>=prevP.L?'L_up':'L_down';
+  document.getElementById('insight').innerHTML=insightMap[key]();
+  document.getElementById('auto-alert').classList.toggle('show',p.alpha>=0.75);
+  document.getElementById('alpha-disp').textContent=p.alpha.toFixed(2);
+}
+
+function update(param,val){
+  prevP={...p};p[param]=val;
+  document.getElementById('v-'+param).textContent=val.toFixed(param==='alpha'?2:1);
+  draw();updateReadout();updateInsight(param);
+}
+
+function resetAll(){
+  Object.assign(p,BASE);
+  ['A','alpha','K','L'].forEach(k=>{
+    document.getElementById('sl-'+k).value=BASE[k];
+    document.getElementById('v-'+k).textContent=BASE[k].toFixed(k==='alpha'?2:1);
+  });
+  document.getElementById('insight').innerHTML='Parameters have been reset to baseline. Both curves now coincide. Adjust any slider to observe divergence from the reference equilibrium.';
+  document.getElementById('auto-alert').classList.remove('show');
+  draw();updateReadout();
+}
+
+document.getElementById('sl-A').addEventListener('input',e=>update('A',parseFloat(e.target.value)));
+document.getElementById('sl-alpha').addEventListener('input',e=>update('alpha',parseFloat(e.target.value)));
+document.getElementById('sl-K').addEventListener('input',e=>update('K',parseFloat(e.target.value)));
+document.getElementById('sl-L').addEventListener('input',e=>update('L',parseFloat(e.target.value)));
+
+function safeDraw(){const c=document.getElementById('main-canvas');if(c&&c.offsetWidth>0){draw();updateReadout();}else requestAnimationFrame(safeDraw);}
+window.addEventListener('load',()=>setTimeout(safeDraw,80));
+window.addEventListener('resize',()=>{clearTimeout(window._rt);window._rt=setTimeout(draw,100);});
+if(window.ResizeObserver){const ro=new ResizeObserver(()=>{clearTimeout(window._rot);window._rot=setTimeout(draw,60);});document.addEventListener('DOMContentLoaded',()=>{const c=document.getElementById('main-canvas');if(c)ro.observe(c.parentElement);});}
+</script>
+</body>
+</html>
