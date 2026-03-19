@@ -11,3 +11,4 @@ Interactive simulation of the Solow-Swan (1956) growth model to visualise how ca
 
 ## Why this matters
 Demonstrates how economic theory translates into intuitive, decision-oriented insights.
+This model is designed to communicate economic intuition clearly, particularly in contexts where complex analysis must be translated into actionable insights.
