@@ -1,5 +1,5 @@
 ## Live Demo
-https://crantv.github.io/growth-model-simulator/
+https://sarikayaumut.github.io/growth-model-simulator/
 
 ## Overview
 Interactive simulation of the Solow-Swan (1956) growth model to visualise how capital, labour, and productivity affect output per worker.
